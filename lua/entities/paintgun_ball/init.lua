@@ -18,6 +18,8 @@ function ENT:Initialize()
 	SafeRemoveEntityDelayed(self, 5)
 end
 
+local paintgun_screen_effect = CreateConVar('paintgun_screen_effect', 1)
+
 function ENT:StartTouch(ent)
 	if ent and IsValid(ent) and ent ~= self.owner then
 		if not ent.painted then
@@ -28,7 +30,7 @@ function ENT:StartTouch(ent)
 			ent:SetColor(Color(255, 255, 255))
 			ent.painted = true
 
-			if ent:IsPlayer() then
+			if ent:IsPlayer() and paintgun_screen_effect:GetBool() == true then
 				net.Start('pgun')
 				net.Send(ent)
 			end

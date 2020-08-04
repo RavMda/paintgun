@@ -5,22 +5,21 @@ AddCSLuaFile('cl_init.lua')
 
 util.AddNetworkString('pgun')
 
-SWEP.PaintBalls = 5
-SWEP.MaxPaintBalls = 5
-SWEP.ReloadTime = 1 -- minutes
-SWEP.NextReload = 0 -- for player notify
+SWEP.paint_balls = 5
+SWEP.max_paint_balls = 5
+SWEP.reload_time = 10 -- seconds
+SWEP.next_reload = 0 -- for player notify
+
+local paintgun_limited = CreateConVar('paintgun_limited', 1)
+local paintgun_cooldown = CreateConVar('paintgun_cooldown', SWEP.reload_time)
 
 function SWEP:PrimaryAttack()
 	local owner = self:GetOwner()
 
-	if self.PaintBalls > 0 or owner:IsSuperAdmin() then
-		owner:EmitSound('zwf/zwf_watering.wav') -- change it later
+	if self.paint_balls > 0 or owner:IsSuperAdmin() or paintgun_limited:GetBool() == false then
+		owner:EmitSound('physics/flesh/flesh_squishy_impact_hard4.wav', 30, nil, nil, CHAN_WEAPON)
 
-		timer.Simple(0.5, function()
-			owner:StopSound('zwf/zwf_watering.wav')
-		end)
-
-		local pgun = ents.Create('pgun_ball')
+		local pgun = ents.Create('paintgun_ball')
 		pgun:SetPos(owner:EyePos() + owner:GetAimVector() * 20)
 		pgun:Spawn()
 		pgun:Activate()
@@ -28,16 +27,16 @@ function SWEP:PrimaryAttack()
 		pgun.owner = owner
 
 		if not owner:IsSuperAdmin() then
-			self.PaintBalls = self.PaintBalls - 1
-			self.NextReload = self.ReloadTime * 60 + CurTime()
+			self.paint_balls = self.paint_balls - 1
+			self.next_reload = paintgun_cooldown:GetInt() + CurTime()
 
-			timer.Create('pgun_ball_reload' .. self:GetCreationID(), self.ReloadTime * 60, 1, function()
+			timer.Create('pgun_ball_reload' .. self:GetCreationID(), paintgun_cooldown:GetInt(), 1, function()
 				if IsValid(self) then
-					self.PaintBalls = self.PaintBalls + (self.MaxPaintBalls - self.PaintBalls)
+					self.paint_balls = self.paint_balls + (self.max_paint_balls - self.paint_balls)
 				end
 			end)
 		end
 	else
-		GAMEMODE:Error(owner, 'Please wait ' ..  math.Round(self.NextReload - CurTime()) .. ' s. ')
+		owner:EmitSound('buttons/weapon_cant_buy.wav', 30, nil, nil, CHAN_WEAPON)
 	end
 end
